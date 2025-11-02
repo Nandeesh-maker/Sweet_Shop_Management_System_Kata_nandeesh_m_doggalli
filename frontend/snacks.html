@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet Shop - Snacks Rack</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🍬 Sweet Shop</h1>
+            <p>Fast & Simple Sweet Management</p>
+        </header>
+
+        <!-- User Info -->
+        <div id="user-info" class="card">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2>Welcome, <span id="user-name"></span>!</h2>
+                    <p>Role: <span id="user-role"></span></p>
+                </div>
+                <div class="flex gap-10">
+                    <button class="btn btn-secondary" onclick="toggleCart()">🛒 Cart</button>
+                    <button class="btn btn-danger" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <!-- Search and Filter -->
+            <div class="card">
+                <h3>Search & Filter Sweets</h3>
+                <div class="flex gap-10">
+                    <input type="text" id="search" placeholder="Search sweets..." class="form-input" style="flex: 2;">
+                    <select id="category" class="form-input" style="flex: 1;">
+                        <option value="">All Categories</option>
+                        <option value="chocolate">Chocolate</option>
+                        <option value="gummies">Gummies</option>
+                        <option value="candy">Candy</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="searchSweets()">Search</button>
+                    <button class="btn btn-secondary" onclick="loadSweets()">Reset</button>
+                </div>
+            </div>
+
+            <!-- Sweets Grid -->
+            <div class="card">
+                <h3>Available Sweets</h3>
+                <div id="sweets-container" class="sweets-grid"></div>
+            </div>
+
+            <!-- Admin Section -->
+            <div id="admin-section" class="card hidden">
+                <h3>Admin Panel</h3>
+                <div class="flex gap-10">
+                    <input type="text" id="sweet-name" placeholder="Name" class="form-input">
+                    <input type="text" id="sweet-category" placeholder="Category" class="form-input">
+                    <input type="number" id="sweet-price" placeholder="Price" class="form-input" step="0.01">
+                    <input type="number" id="sweet-quantity" placeholder="Quantity" class="form-input">
+                    <button class="btn btn-success" onclick="addSweet()">Add Sweet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div id="cart-sidebar" class="cart-sidebar">
+        <div class="flex justify-between items-center mb-10">
+            <h3>🛒 Your Cart</h3>
+            <button class="btn btn-secondary" onclick="toggleCart()">✕</button>
+        </div>
+        <div id="cart-items"></div>
+        <div class="mt-10">
+            <div class="text-center mb-10"><strong>Total: $<span id="cart-total">0.00</span></strong></div>
+            <button class="btn btn-success" onclick="checkout()" style="width: 100%;">Checkout</button>
+        </div>
+    </div>
+
+    <script src="snacks.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet Shop - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🍬 Sweet Shop</h1>
+            <p>Fast & Simple Sweet Management</p>
+        </header>
+
+        <!-- Auth Section -->
+        <div id="auth-section" class="card">
+            <h2 class="text-center">Welcome! Login or Register</h2>
+            <input type="email" id="email" placeholder="Email" class="form-input">
+            <input type="password" id="password" placeholder="Password" class="form-input">
+            <input type="text" id="name" placeholder="Name (Register)" class="form-input">
+            <div class="flex gap-10">
+                <button class="btn btn-primary" onclick="register()" style="flex: 1;">Register</button>
+                <button class="btn btn-success" onclick="login()" style="flex: 1;">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+// Configuration
+const API_BASE = 'http://localhost:3000/api';
+let currentUser = null;
+
+// Utility Functions
+function showAlert(message, type = 'success') {
+    const existingAlert = document.querySelector('.alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alert, container.firstChild);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+function setLoading(loading = true) {
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.disabled = loading;
+        if (loading) {
+            button.classList.add('loading');
+        } else {
+            button.classList.remove('loading');
+        }
+    });
+}
+
+// Check backend connection
+async function checkBackendConnection() {
+    try {
+        const response = await fetch(`${API_BASE}/health`);
+        return response.ok;
+    } catch (error) {
+        return false;
+    }
+}
+
+// Authentication Functions
+async function register() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const name = document.getElementById('name').value;
+
+    if (!email || !password || !name) {
+        showAlert('Please fill in all fields', 'error');
+        return;
+    }
+
+    const isBackendConnected = await checkBackendConnection();
+    if (!isBackendConnected) {
+        showAlert('❌ Cannot connect to server. Please make sure backend is running on port 3000.', 'error');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert('🎉 Registration successful!');
+            await login();
+        } else {
+            showAlert('❌ ' + data.error, 'error');
+        }
+    } catch (error) {
+        showAlert('❌ Registration failed. Please check if backend is running.', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+        showAlert('Please enter email and password', 'error');
+        return;
+    }
+
+    const isBackendConnected = await checkBackendConnection();
+    if (!isBackendConnected) {
+        showAlert('❌ Cannot connect to server. Please make sure backend is running on port 3000.', 'error');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            currentUser = data.user;
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            updateUI();
+            await loadSweets();
+            showAlert(`✅ Welcome back, ${data.user.name}!`);
+        } else {
+            showAlert('❌ ' + data.error, 'error');
+        }
+    } catch (error) {
+        showAlert('❌ Login failed. Please check if backend is running.', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    updateUI();
+    showAlert('👋 Logged out successfully!');
+}
+
+// Sweet Management Functions
+async function loadSweets() {
+    const isBackendConnected = await checkBackendConnection();
+    if (!isBackendConnected) {
+        showAlert('❌ Cannot connect to server. Please make sure backend is running.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/sweets`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch sweets');
+        }
+        const data = await response.json();
+        displaySweets(data.data);
+    } catch (error) {
+        showAlert('❌ Failed to load sweets. Please check backend connection.', 'error');
+        displaySweets([]);
+    }
+}
+
+async function searchSweets() {
+    const name = document.getElementById('search').value;
+    const category = document.getElementById('category').value;
+    
+    const params = new URLSearchParams();
+    if (name) params.append('name', name);
+    if (category) params.append('category', category);
+
+    const isBackendConnected = await checkBackendConnection();
+    if (!isBackendConnected) {
+        showAlert('❌ Cannot connect to server. Please make sure backend is running.', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/sweets/search?${params}`);
+        const data = await response.json();
+        displaySweets(data.data);
+        
+        if (data.data.length === 0) {
+            showAlert('No sweets found matching your search criteria.', 'error');
+        }
+    } catch (error) {
+        showAlert('❌ Search failed. Please check backend connection.', 'error');
+    }
+}
+
+async function purchaseSweet(sweetId, sweetName, quantity = 1) {
+    setLoading(true);
+
+    try {
+        const response = await fetch(`${API_BASE}/inventory/${sweetId}/purchase`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert(`✅ Purchased ${quantity} ${sweetName}(s) successfully!`);
+            await loadSweets();
+        } else {
+            showAlert('❌ ' + data.error, 'error');
+        }
+    } catch (error) {
+        showAlert('❌ Purchase failed. Please try again.', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+async function addSweet() {
+    const name = document.getElementById('sweet-name').value;
+    const category = document.getElementById('sweet-category').value;
+    const price = document.getElementById('sweet-price').value;
+    const quantity = document.getElementById('sweet-quantity').value;
+
+    if (!name || !category || !price || !quantity) {
+        showAlert('Please fill in all fields', 'error');
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const response = await fetch(`${API_BASE}/sweets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                name, 
+                category, 
+                price: parseFloat(price), 
+                quantity: parseInt(quantity) 
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert('✅ Sweet added successfully!');
+            await loadSweets();
+            document.getElementById('sweet-name').value = '';
+            document.getElementById('sweet-category').value = '';
+            document.getElementById('sweet-price').value = '';
+            document.getElementById('sweet-quantity').value = '';
+        } else {
+            showAlert('❌ ' + data.error, 'error');
+        }
+    } catch (error) {
+        showAlert('❌ Failed to add sweet. Please try again.', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
+function displaySweets(sweets) {
+    const container = document.getElementById('sweets-container');
+    if (sweets.length === 0) {
+        container.innerHTML = `
+            <div class="sweet-card" style="grid-column: 1 / -1; text-align: center;">
+                <h3>No sweets found</h3>
+                <p>Try adjusting your search criteria or check back later!</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = sweets.map(sweet => `
+        <div class="sweet-card ${sweet.quantity === 0 ? 'out-of-stock' : ''}">
+            <h3>${sweet.name}</h3>
+            <p><strong>Category:</strong> ${sweet.category}</p>
+            <p class="price">$${sweet.price.toFixed(2)}</p>
+            <p class="quantity">In Stock: ${sweet.quantity}</p>
+            <button class="btn btn-primary" 
+                    onclick="purchaseSweet(${sweet.id}, '${sweet.name.replace(/'/g, "\\'")}', 1)" 
+                    ${sweet.quantity === 0 ? 'disabled' : ''}>
+                ${sweet.quantity === 0 ? '😔 Out of Stock' : '🛒 Purchase'}
+            </button>
+        </div>
+    `).join('');
+}
+
+function updateUI() {
+    if (currentUser) {
+        document.getElementById('auth-section').style.display = 'none';
+        document.getElementById('user-info').style.display = 'block';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('user-name').textContent = currentUser.name;
+        document.getElementById('user-role').textContent = currentUser.role;
+        
+        if (currentUser.role === 'admin') {
+            document.getElementById('admin-section').style.display = 'block';
+        } else {
+            document.getElementById('admin-section').style.display = 'none';
+        }
+    } else {
+        document.getElementById('auth-section').style.display = 'block';
+        document.getElementById('user-info').style.display = 'none';
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('admin-section').style.display = 'none';
+    }
+}
+
+// Initialize the application
+window.onload = function() {
+    const savedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    if (savedUser && token) {
+        currentUser = JSON.parse(savedUser);
+        updateUI();
+        loadSweets();
+    }
+};
